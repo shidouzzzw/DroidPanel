@@ -31,20 +31,25 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.droidpanel.app.R
+import com.droidpanel.app.data.SystemSnapshot
+import com.droidpanel.app.data.formatBytes
+import com.droidpanel.app.data.formatPercent
 import com.droidpanel.app.model.DiagModule
 import com.droidpanel.app.ui.components.DpChip
 import com.droidpanel.app.ui.components.DpIcon
 import com.droidpanel.app.ui.components.DpLabel
+import com.droidpanel.app.ui.components.DpMeter
 import com.droidpanel.app.ui.components.DpPanel
+import com.droidpanel.app.ui.stats.SystemStatsViewModel
 import com.droidpanel.app.ui.theme.DpTextPrimary
 import com.droidpanel.app.ui.theme.DpTextSecondary
 
 @Composable
 fun DashboardScreen(
     onOpenModule: (DiagModule) -> Unit,
-    viewModel: DashboardViewModel = viewModel(),
+    viewModel: SystemStatsViewModel = viewModel(),
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
+    val snapshot by viewModel.snapshot.collectAsStateWithLifecycle()
     val insets = WindowInsets.systemBars.union(WindowInsets.displayCutout).asPaddingValues()
     val dir = LocalLayoutDirection.current
     val padding = PaddingValues(
@@ -69,6 +74,7 @@ fun DashboardScreen(
             }
         }
         item(span = { GridItemSpan(maxLineSpan) }) {
+            val current = snapshot
             DpPanel(Modifier.fillMaxWidth()) {
                 DpLabel("Device")
                 Spacer(Modifier.height(10.dp))
@@ -76,9 +82,17 @@ fun DashboardScreen(
                     DpIcon(R.drawable.ic_device)
                     Spacer(Modifier.width(12.dp))
                     Column {
-                        Text(state.device.displayName, style = MaterialTheme.typography.titleMedium, color = DpTextPrimary)
                         Text(
-                            "Android ${state.device.androidRelease} · API ${state.device.apiLevel}",
+                            current?.summary?.displayName ?: "Reading…",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = DpTextPrimary,
+                        )
+                        Text(
+                            if (current == null) {
+                                "Collecting device state"
+                            } else {
+                                "Android ${current.summary.androidRelease} · API ${current.summary.apiLevel}"
+                            },
                             style = MaterialTheme.typography.bodySmall,
                             color = DpTextSecondary,
                         )
@@ -87,16 +101,19 @@ fun DashboardScreen(
             }
         }
         item(span = { GridItemSpan(maxLineSpan) }) {
+            val current = snapshot
             DpPanel(Modifier.fillMaxWidth()) {
-                DpLabel("System health")
-                Spacer(Modifier.height(10.dp))
-                Text("Not available yet", style = MaterialTheme.typography.titleMedium, color = DpTextPrimary)
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    "The health overview will appear once real, explainable measurements are collected. No placeholder score is shown.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = DpTextSecondary,
-                )
+                DpLabel("Live system")
+                Spacer(Modifier.height(12.dp))
+                if (current == null) {
+                    Text(
+                        "Reading sensors…",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = DpTextSecondary,
+                    )
+                } else {
+                    LiveSystemRows(current)
+                }
             }
         }
         item(span = { GridItemSpan(maxLineSpan) }) { DpLabel("Modules") }
@@ -107,8 +124,51 @@ fun DashboardScreen(
                 Text(module.title, style = MaterialTheme.typography.titleMedium, color = DpTextPrimary)
                 Text(module.summary, style = MaterialTheme.typography.bodySmall, color = DpTextSecondary)
                 Spacer(Modifier.height(12.dp))
-                DpChip("Phase ${module.phase}")
+                DpChip(if (module.live) "Live data" else "Phase ${module.phase}")
             }
         }
+    }
+}
+
+@Composable
+private fun LiveSystemRows(snapshot: SystemSnapshot) {
+    val memory = snapshot.memory
+    val battery = snapshot.battery
+    val storage = snapshot.storage
+
+    Column {
+        LiveRow(
+            name = "Memory",
+            value = "${formatPercent(memory.usedFraction)} · ${formatBytes(memory.usedBytes)} / ${formatBytes(memory.totalBytes)}",
+            fraction = memory.usedFraction,
+        )
+        Spacer(Modifier.height(12.dp))
+        LiveRow(
+            name = "Battery",
+            value = "${battery.levelPercent?.let { "$it%" } ?: "—"} · ${battery.status}",
+            fraction = battery.levelFraction,
+        )
+        Spacer(Modifier.height(12.dp))
+        LiveRow(
+            name = "Storage",
+            value = "${formatPercent(storage.usedFraction)} · ${formatBytes(storage.availableBytes)} free",
+            fraction = storage.usedFraction,
+        )
+    }
+}
+
+@Composable
+private fun LiveRow(name: String, value: String, fraction: Float) {
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            DpLabel(name)
+            Text(value, style = MaterialTheme.typography.bodySmall, color = DpTextPrimary)
+        }
+        Spacer(Modifier.height(6.dp))
+        DpMeter(fraction)
     }
 }

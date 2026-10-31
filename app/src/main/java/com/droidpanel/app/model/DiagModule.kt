@@ -5,7 +5,8 @@ import com.droidpanel.app.R
 
 /**
  * Diagnostics modules shown on the dashboard.
- * [phase] is the roadmap phase in which the module gets real data (Phase 1 is shell only).
+ * [live] is true when the module reads real data from the device; [phase] is the roadmap phase in
+ * which the remaining modules get theirs.
  */
 enum class DiagModule(
     val id: String,
@@ -14,15 +15,20 @@ enum class DiagModule(
     @DrawableRes val icon: Int,
     val phase: Int,
     val planned: List<String>,
+    val live: Boolean = false,
 ) {
     MEMORY("memory", "Memory", "RAM totals and pressure", R.drawable.ic_memory, 2,
-        listOf("Total, available and used RAM", "Usage percentage", "Memory pressure when supported", "Particle visualization of utilization", "Timestamped history")),
+        listOf("Total, available and used RAM", "Usage percentage", "Memory pressure when supported", "Particle visualization of utilization", "Timestamped history"),
+        live = true),
     BATTERY("battery", "Battery & Thermal", "Charge, power, temperature", R.drawable.ic_battery, 2,
-        listOf("Level, voltage, charging state and source", "Battery temperature", "Health only when reliably reported", "Android thermal status")),
+        listOf("Level, voltage, charging state and source", "Battery temperature", "Health only when reliably reported", "Android thermal status"),
+        live = true),
     STORAGE("storage", "Storage", "Internal capacity and usage", R.drawable.ic_storage, 2,
-        listOf("Total, available and used internal storage", "Accessible filesystem details", "App storage and cache where permitted")),
+        listOf("Total, available and used internal storage", "Accessible filesystem details", "App storage and cache where permitted"),
+        live = true),
     CPU("cpu", "CPU", "Cores, ABI, frequencies", R.drawable.ic_cpu, 4,
-        listOf("Architecture and core count", "Frequency ranges when accessible", "Live utilization only if reliably measurable", "Utilization history")),
+        listOf("Architecture and core count", "Frequency ranges when accessible", "Live utilization only if reliably measurable", "Utilization history"),
+        live = true),
     GPU("gpu", "GPU & Graphics", "Renderer and API support", R.drawable.ic_gpu, 4,
         listOf("Renderer and vendor when available", "OpenGL ES and Vulkan capabilities", "No fabricated utilization, clock or temperature")),
     DISPLAY("display", "Display", "Resolution, density, refresh", R.drawable.ic_display, 4,
@@ -34,7 +40,8 @@ enum class DiagModule(
     APPS("apps", "Applications", "Visible installed apps", R.drawable.ic_apps, 5,
         listOf("Name, package, version", "Size where accessible", "Package visibility limits explained")),
     DEVICE("device", "Android & Device", "Build, API, kernel", R.drawable.ic_device, 5,
-        listOf("Manufacturer, model, release, API level", "Build info and security patch", "Kernel and runtime information")),
+        listOf("Manufacturer, model, release, API level", "Build info and security patch", "Kernel and runtime information"),
+        live = true),
     CAMERA_AUDIO("camera_audio", "Camera & Audio", "Capabilities only", R.drawable.ic_camera, 5,
         listOf("Camera characteristics and output sizes", "Audio devices and capabilities", "Never activates camera or microphone without user action")),
     SECURITY_PERF("security_perf", "Security & Performance", "Patch level, capabilities", R.drawable.ic_security, 6,
