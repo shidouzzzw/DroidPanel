@@ -9,6 +9,7 @@ captures/
 .externalNativeBuild/
 .cxx/
 *.apk
+!releases/*.apk
 *.aab
 *.jks
 *.keystore
